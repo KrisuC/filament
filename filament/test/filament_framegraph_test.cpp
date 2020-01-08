@@ -322,7 +322,7 @@ TEST(FrameGraphTest, RenderTargetLifetime) {
                         .format = TextureFormat::RGBA16F
                 };
                 data.output = builder.createTexture("color buffer", desc);
-                data.rt = builder.createRenderTarget(data.output, (TargetBufferFlags)0x80);
+                data.rt = builder.createRenderTarget(data.output, TargetBufferFlags::COLOR);
                 EXPECT_TRUE(fg.isValid(data.output));
             },
             [=, &rt1, &renderPassExecuted1](
@@ -333,6 +333,7 @@ TEST(FrameGraphTest, RenderTargetLifetime) {
                 auto const& rt = resources.getRenderTarget(data.rt);
                 rt1 = rt.target;
                 EXPECT_TRUE(rt.target);
+                EXPECT_EQ(TargetBufferFlags::COLOR, rt.params.flags.clear);
                 EXPECT_EQ(TargetBufferFlags::ALL, rt.params.flags.discardStart);
                 EXPECT_EQ(TargetBufferFlags::DEPTH_AND_STENCIL, rt.params.flags.discardEnd);
             });
@@ -340,9 +341,7 @@ TEST(FrameGraphTest, RenderTargetLifetime) {
     auto& renderPass2 = fg.addPass<RenderPassData>("Render2",
             [&](FrameGraph::Builder& builder, RenderPassData& data) {
                 data.output = builder.write(builder.read(renderPass1.getData().output));
-                data.rt = builder.createRenderTarget("color", {
-                        .attachments.color = { data.output }
-                }, (TargetBufferFlags)0x40);
+                data.rt = builder.createRenderTarget(data.output, TargetBufferFlags::NONE);
                 EXPECT_TRUE(fg.isValid(data.output));
             },
             [=, &rt1, &renderPassExecuted2](
@@ -352,7 +351,7 @@ TEST(FrameGraphTest, RenderTargetLifetime) {
                 renderPassExecuted2 = true;
                 auto const& rt = resources.getRenderTarget(data.rt);
                 EXPECT_TRUE(rt.target);
-                EXPECT_EQ(TargetBufferFlags(0x40u|0x80u), rt.params.flags.clear);
+                EXPECT_EQ(TargetBufferFlags::NONE, rt.params.flags.clear);
                 EXPECT_EQ(rt1.getId(), rt.target.getId()); // FIXME: this test is always true the NoopDriver
                 EXPECT_EQ(TargetBufferFlags::DEPTH_AND_STENCIL, rt.params.flags.discardStart);
                 EXPECT_EQ(TargetBufferFlags::DEPTH_AND_STENCIL, rt.params.flags.discardEnd);
