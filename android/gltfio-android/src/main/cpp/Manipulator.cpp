@@ -18,18 +18,33 @@
 
 #include <camutils/Manipulator.h>
 
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_google_android_filament_gltfio_Manipulator_nCreateManipulator(JNIEnv*, jclass,
-        ???) {
-    Engine* engine = (Engine*) nativeEngine;
-    MaterialProvider* materials = (MaterialProvider*) nativeProvider;
-    EntityManager* entities = (EntityManager*) nativeEntities;
-    return (jlong) AssetLoader::create({engine, materials, nullptr, entities});
+using namespace filament::camutils;
+
+using Builder = Manipulator<float>::Config;
+
+extern "C" JNIEXPORT jlong nCreateBuilder(JNIEnv*, jclass) {
+    return (jlong) new Builder {};
 }
 
+extern "C" JNIEXPORT void nDestroyBuilder(JNIEnv*, jclass, jlong nativeBuilder) {
+    Builder* builder = (Builder*) nativeBuilder;
+    delete builder;
+}
+
+extern "C" JNIEXPORT void nBuilderViewport(JNIEnv*, jclass, jlong nativeBuilder, int width, int height) {
+    Builder* builder = (Builder*) nativeBuilder;
+    builder->viewport[0] = width;
+    builder->viewport[1] = height;
+}
+
+extern "C" JNIEXPORT long nBuilderBuild(JNIEnv*, jclass, jlong nativeBuilder, int mode) {
+    Builder* builder = (Builder*) nativeBuilder;
+    return (jlong) Manipulator<float>::create((Mode) mode, *builder);
+}
+
+
 extern "C" JNIEXPORT void JNICALL
-Java_com_google_android_filament_gltfio_Manipulator_nDestroyManipulator(JNIEnv*, jclass,
-        jlong nativeLoader) {
-    AssetLoader* loader = (AssetLoader*) nativeLoader;
-    AssetLoader::destroy(&loader);
+Java_com_google_android_filament_gltfio_Manipulator_nDestroyManipulator(JNIEnv*, jclass, jlong nativeManip) {
+    auto manip = (Manipulator<float>*) nativeManip;
+    delete manip;
 }
